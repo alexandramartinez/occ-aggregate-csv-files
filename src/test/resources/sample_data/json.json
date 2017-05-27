@@ -1,0 +1,20 @@
+{
+  "vacantes": [
+    {
+      "nombre_vacante": "vacante1",
+      "nombre_vacante-href": "www.com.mx",
+      "empresa": "Accenture",
+      "sueldo": "1000MXN",
+      "categoria": "cat1",
+      "subcategoria": "sub1",
+      "localidad": "mex",
+      "sector": "sec1",
+      "giro": "tec",
+      "tipo_contratacion": "completa",
+      "numero_oferta": "123",
+      "descripcion": "meh",
+      "pagination": "1",
+      "pagination-href": "www.com.mx"
+    }
+  ]
+}

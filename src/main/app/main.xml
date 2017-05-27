@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+    <file:connector name="ReadCsvs" autoDelete="true" streaming="true" validateConnections="true" doc:name="File" outputAppend="true"/>
+
+    <flow name="getFiles">
+        <file:inbound-endpoint path="src/main/resources/in" moveToDirectory="src/main/resources/processed" responseTimeout="10000" doc:name="File" encoding="UTF-8">
+            <file:filename-regex-filter pattern=".*csv" caseSensitive="false"/>
+        </file:inbound-endpoint>
+        <dw:transform-message doc:name="CsvToJson" metadata:id="e47c60b1-fa54-4a2a-9d63-97e630bf43ab">
+            <dw:input-payload mimeType="application/csv" doc:sample="sample_data\list_csv_3.csv"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	vacantes: payload map ((payload01 , indexOfPayload01) -> {
+		nombre_vacante: payload01.nombre_vacante,
+		nombre_vacante-href: payload01.nombre_vacante-href,
+		empresa: payload01.empresa,
+		sueldo: payload01.sueldo,
+		categoria: payload01.categoria,
+		subcategoria: payload01.subcategoria,
+		localidad: payload01.localidad,
+		sector: payload01.sector,
+		giro: payload01.giro,
+		tipo_contratacion: payload01.tipo_contratacion,
+		numero_oferta: payload01.numero_oferta,
+		descripcion: payload01.descripcion,
+		pagination: payload01.pagination,
+		pagination-href: payload01.pagination-href
+	}) filter ((vacante) -> vacante.nombre_vacante != null)
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <dw:transform-message doc:name="filterObjects" metadata:id="72df7e69-5876-477c-819c-2738f3196d04">
+            <dw:input-payload doc:sample="C:\Users\a.martinez.navarro\Downloads\csv-file.json" mimeType="application/json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	vacantes: payload.vacantes map ((vacante , indexOfVacante) -> {
+		nombre_vacante: vacante.nombre_vacante
+			unless vacante.empresa == "null"
+				and vacante.sueldo == "null"
+				and vacante.categoria == "null"
+				and vacante.subcategoria == "null"
+				and vacante.localidad == "null"
+				and vacante.sector == "null"
+				and vacante.giro == "null"
+				and vacante.tipo_contratacion == "null"
+				and vacante.numero_oferta == "null"
+			otherwise null,
+		nombre_vacante-href: vacante.nombre_vacante-href,
+		empresa: vacante.empresa,
+		sueldo: vacante.sueldo,
+		categoria: vacante.categoria,
+		subcategoria: vacante.subcategoria,
+		localidad: vacante.localidad,
+		sector: vacante.sector,
+		giro: vacante.giro,
+		tipo_contratacion: vacante.tipo_contratacion,
+		numero_oferta: vacante.numero_oferta,
+		descripcion: vacante.descripcion
+			replace "\n" with ""
+			replace "\r" with ""
+			replace "\t" with "",
+		pagination: vacante.pagination,
+		pagination-href: vacante.pagination-href
+	}) filter ((vacante) -> vacante.nombre_vacante != null)
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <dw:transform-message doc:name="JsonToCsv" metadata:id="d0460ca2-ceb7-4d42-b563-6cbdae770918">
+            <dw:input-payload doc:sample="C:\Users\a.martinez.navarro\Downloads\csv-file.json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/csv quote="\"", separator="," , quoteValues=true
+---
+payload.vacantes map ((vacante , indexOfVacante) -> {
+	nombre_vacante: vacante.nombre_vacante,
+	nombre_vacante-href: vacante.nombre_vacante-href,
+	empresa: vacante.empresa,
+	sueldo: vacante.sueldo,
+	categoria: vacante.categoria,
+	subcategoria: vacante.subcategoria,
+	localidad: vacante.localidad,
+	sector: vacante.sector,
+	giro: vacante.giro,
+	tipo_contratacion: vacante.tipo_contratacion,
+	numero_oferta: vacante.numero_oferta,
+	descripcion: vacante.descripcion,
+	pagination: vacante.pagination,
+	pagination-href: vacante.pagination-href
+})]]></dw:set-payload>
+</dw:transform-message>
+        <file:outbound-endpoint path="src/main/resources/out" outputPattern="TheOnlyOne.csv" connector-ref="ReadCsvs" responseTimeout="10000" doc:name="File"/>
+        <logger level="INFO" doc:name="Logger"/>
+
+    </flow>
+
+
+</mule>
